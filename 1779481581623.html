@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<script type="application/json" id="cowork-artifact-meta">
+{
+  "name": "Dashboard Financeiro Abril2026",
+  "schemaVersion": 1,
+  "description": "Dashboard financeiro Jan–22/Mai 2026. Caixa R$744.474,19 em 22/05. Layout com filtros por mês, fluxo diário, categorias e top clientes. Dados: Omie ERP, contas conciliadas D-1."
+}
+</script>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Financeiro — Jan–Mai 2026</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<style>
+:root{color-scheme:light;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f2f7;color:#1a1d23;padding:20px 24px 36px;min-height:100vh;}
+
+/* HEADER */
+.header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
+.header h1{font-size:19px;font-weight:800;color:#1a1d23;letter-spacing:-.3px;}
+.header .sub{font-size:11px;color:#6b7280;margin-top:3px;}
+.period-pill{background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;padding:5px 12px;border-radius:20px;letter-spacing:.4px;align-self:center;}
+
+/* CAIXA CARD — destaque principal */
+.caixa-card{background:linear-gradient(135deg,#1e293b 0%,#334155 100%);border-radius:14px;padding:20px 24px;margin-bottom:16px;display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center;}
+.caixa-left{}
+.caixa-label{font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px;}
+.caixa-value{font-size:36px;font-weight:900;color:#f0fdf4;line-height:1;letter-spacing:-1px;}
+.caixa-meta{font-size:11px;color:#64748b;margin-top:6px;}
+.caixa-meta span{color:#34d399;font-weight:600;}
+.caixa-right{min-width:200px;height:70px;position:relative;}
+.caixa-chart-wrap{position:relative;height:70px;width:200px;}
+
+/* MONTH FILTER */
+.filter-bar{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.filter-label{font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.6px;margin-right:4px;}
+.chip{padding:7px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #e5e7eb;background:#fff;color:#6b7280;transition:all .15s;}
+.chip:hover{border-color:#6366f1;color:#4f46e5;}
+.chip.active{background:#6366f1;border-color:#6366f1;color:#fff;box-shadow:0 2px 8px rgba(99,102,241,.3);}
+
+/* KPI GRID */
+.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}
+.kpi{background:#fff;border-radius:12px;padding:16px 18px;border:1px solid #e5e7eb;position:relative;overflow:hidden;}
+.kpi::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;border-radius:12px 0 0 12px;}
+.kpi.g::before{background:#10b981;} .kpi.r::before{background:#ef4444;} .kpi.b::before{background:#6366f1;}
+.kpi-label{font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.7px;font-weight:700;margin-bottom:5px;}
+.kpi-value{font-size:22px;font-weight:800;line-height:1.1;margin-bottom:3px;}
+.kpi.g .kpi-value{color:#059669;} .kpi.r .kpi-value{color:#dc2626;} .kpi.b .kpi-value{color:#4f46e5;}
+.kpi-sub{font-size:10px;color:#9ca3af;}
+
+/* CHARTS GRID */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.card{background:#fff;border-radius:12px;padding:18px 20px;border:1px solid #e5e7eb;}
+.card h2{font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;gap:5px;}
+.ch{position:relative;}
+.ch.h260{height:260px;} .ch.h240{height:240px;} .ch.h220{height:220px;} .ch.h300{height:300px;}
+.nota{font-size:10px;color:#9ca3af;margin-top:8px;padding-top:6px;border-top:1px solid #f3f4f6;line-height:1.5;}
+
+/* TOP CLIENTES */
+.top-list{list-style:none;}
+.top-list li{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #f9fafb;}
+.top-list li:last-child{border-bottom:none;}
+.top-rank{font-size:10px;font-weight:800;color:#9ca3af;width:16px;text-align:center;flex-shrink:0;}
+.top-wrap{flex:1;min-width:0;}
+.top-nome{font-size:12px;font-weight:600;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;}
+.top-bar{height:4px;background:#e0e7ff;border-radius:99px;overflow:hidden;}
+.top-fill{height:100%;background:linear-gradient(90deg,#6366f1,#818cf8);border-radius:99px;transition:width .4s ease;}
+.top-val{font-size:12px;font-weight:800;color:#059669;white-space:nowrap;flex-shrink:0;}
+
+/* CONSOLIDADO TABLE */
+.cons-wrap{overflow-x:auto;}
+.cons-table{width:100%;border-collapse:collapse;font-size:12px;min-width:540px;}
+.cons-table th{font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;font-weight:700;padding:0 12px 10px 0;border-bottom:2px solid #e5e7eb;text-align:right;white-space:nowrap;}
+.cons-table th:first-child{text-align:left;}
+.cons-table td{padding:10px 12px 10px 0;border-bottom:1px solid #f3f4f6;text-align:right;font-weight:600;font-size:12px;}
+.cons-table td:first-child{text-align:left;font-weight:700;color:#374151;}
+.cons-table tr.selected td{background:#f5f3ff;}
+.cons-table tr.total-row td{border-top:2px solid #e5e7eb;background:#f8fafc;font-weight:800;font-size:12px;}
+.pos{color:#059669;} .neg{color:#dc2626;} .neu{color:#4f46e5;}
+.par{font-size:9px;background:#fef3c7;color:#92400e;padding:2px 5px;border-radius:4px;font-weight:700;margin-left:4px;vertical-align:middle;}
+
+@media(max-width:700px){
+  .g2{grid-template-columns:1fr;}
+  .kpi-grid{grid-template-columns:1fr 1fr;}
+  .caixa-card{grid-template-columns:1fr;}
+  .caixa-right{display:none;}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>📊 Dashboard Financeiro</h1>
+    <div class="sub">Extração Omie · Contas conciliadas D-1 · Janeiro a 22/Mai 2026</div>
+  </div>
+  <div class="period-pill">JAN – MAI 2026</div>
+</div>
+
+<!-- CAIXA CARD -->
+<div class="caixa-card">
+  <div class="caixa-left">
+    <div class="caixa-label">Caixa Total — Saldo Consolidado</div>
+    <div class="caixa-value">R$ 744.474,19</div>
+    <div class="caixa-meta">Posição em <span>22/05/2026</span> · Saldo previsto: R$ 853.766,52 · Abertura Jan/26: R$ 82.884,10</div>
+  </div>
+  <div class="caixa-right">
+    <div class="caixa-chart-wrap"><canvas id="miniCaixa"></canvas></div>
+  </div>
+</div>
+
+<!-- FILTER -->
+<div class="filter-bar">
+  <span class="filter-label">Filtrar mês:</span>
+  <div class="chip active" data-mes="all" onclick="setFiltro('all')">Todos</div>
+  <div class="chip" data-mes="2026-01" onclick="setFiltro('2026-01')">Jan/26</div>
+  <div class="chip" data-mes="2026-02" onclick="setFiltro('2026-02')">Fev/26</div>
+  <div class="chip" data-mes="2026-03" onclick="setFiltro('2026-03')">Mar/26</div>
+  <div class="chip" data-mes="2026-04" onclick="setFiltro('2026-04')">Abr/26</div>
+  <div class="chip" data-mes="2026-05" onclick="setFiltro('2026-05')">Mai/26 ✦</div>
+</div>
+
+<!-- KPI CARDS -->
+<div class="kpi-grid">
+  <div class="kpi g"><div class="kpi-label">Entradas</div><div class="kpi-value" id="kpi-rec">—</div><div class="kpi-sub" id="kpi-rec-sub">—</div></div>
+  <div class="kpi r"><div class="kpi-label">Saídas</div><div class="kpi-value" id="kpi-pag">—</div><div class="kpi-sub" id="kpi-pag-sub">—</div></div>
+  <div class="kpi b"><div class="kpi-label">Resultado</div><div class="kpi-value" id="kpi-net">—</div><div class="kpi-sub" id="kpi-net-sub">—</div></div>
+</div>
+
+<!-- GRÁFICO PRINCIPAL -->
+<div class="card" style="margin-bottom:14px;">
+  <h2 id="chart-main-title">📅 Entradas × Saídas por Mês</h2>
+  <div class="ch h300"><canvas id="chartMain"></canvas></div>
+  <div class="nota" id="chart-main-nota">* Maio/2026 parcial (até 19/05). Transferências internas excluídas.</div>
+</div>
+
+<!-- CATEGORIAS + TOP CLIENTES -->
+<div class="g2">
+  <div class="card">
+    <h2>💰 Receitas por Categoria</h2>
+    <div class="ch h240"><canvas id="chartRecCat"></canvas></div>
+  </div>
+  <div class="card">
+    <h2>💸 Top Despesas por Categoria</h2>
+    <div class="ch h240"><canvas id="chartPagCat"></canvas></div>
+  </div>
+</div>
+
+<div class="g2">
+  <div class="card">
+    <h2>🏆 Top Clientes por Recebimento</h2>
+    <ul class="top-list" id="topClientes"></ul>
+    <div class="nota" id="nota-clientes"></div>
+  </div>
+  <div class="card">
+    <h2>📋 Consolidado Mensal</h2>
+    <div class="cons-wrap">
+      <table class="cons-table">
+        <thead><tr>
+          <th style="text-align:left">Mês</th>
+          <th>Entradas</th><th>Saídas</th><th>Resultado</th>
+        </tr></thead>
+        <tbody id="consBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== DADOS =====
+const mensal = {
+  "2026-01":{rec:2193186.93,pag:1504571.63,label:"Janeiro",parcial:false},
+  "2026-02":{rec:1199935.26,pag:1467864.82,label:"Fevereiro",parcial:false},
+  "2026-03":{rec:1468790.82,pag:1459631.36,label:"Março",parcial:false},
+  "2026-04":{rec:1367250.66,pag:1450343.32,label:"Abril",parcial:false},
+  "2026-05":{rec:1214795.58,pag:542052.12, label:"Maio",parcial:true}
+};
+
+const detalhe = {
+  "2026-01":{
+    rec_cat:[["SaaS (Recorrente)",1143236.86],["Empréstimos Bancários",990000],["Implantação",36400],["Consultoria",17647.06],["Customizações",5693.64],["Estornos",200],["Rendimentos",9.37]],
+    pag_cat:[["Folha TI",370966],["Datacenter",168660.12],["Pagamento Empréstimos",118909.22],["Folha Implantação",106547.14],["Parcel. Impostos",98284.11],["Juros Empréstimos",77319.13],["Folha Sócios",75675],["Rescisões",67996.15],["Folha Comercial",58442.94],["PIS/COFINS",46773.82]],
+    cli:[["BANCO BRADESCO S.A.",990000],["CAIXA SUPORTE - SP",243937.72],["BNDES",44605.9],["IGUA SANEAMENTO",40000],["FUNCEF",25380],["SESI - MA",19974.69],["Embraer (SaaS)",18079.11],["EVEN CONSTRUTORA",17647.06]],
+    fluxo:{"01/01":{rec:2600,pag:5.94},"02/01":{rec:132594.2,pag:10051.7},"03/01":{rec:0,pag:2142.84},"04/01":{rec:5535.14,pag:0},"05/01":{rec:67245.2,pag:115364.93},"06/01":{rec:25606.6,pag:1505.5},"07/01":{rec:8700,pag:10614.76},"08/01":{rec:22616.62,pag:195},"09/01":{rec:21255.58,pag:103087.33},"10/01":{rec:3251.32,pag:0},"12/01":{rec:52752.19,pag:17185.52},"13/01":{rec:20367.6,pag:62103.11},"14/01":{rec:14145.44,pag:2289.38},"15/01":{rec:63709.05,pag:40161.11},"16/01":{rec:31106.39,pag:33791.34},"19/01":{rec:288281.11,pag:1018.53},"20/01":{rec:68991.13,pag:60207.36},"21/01":{rec:10269.95,pag:23.76},"22/01":{rec:31816.28,pag:4487.76},"23/01":{rec:1015818.65,pag:70102.77},"26/01":{rec:190636.55,pag:86262.85},"27/01":{rec:22321.66,pag:31226.54},"28/01":{rec:25564.69,pag:652446.5},"29/01":{rec:23396.58,pag:57757.7},"30/01":{rec:44605,pag:142516.34}},
+    nota:"* Empréstimos Bancários (R$990K captação BRADESCO) distorce o total de entradas. Sem ele: R$1,20M."
+  },
+  "2026-02":{
+    rec_cat:[["SaaS (Recorrente)",1164242.39],["Consultoria",15000],["Implantação",15000],["Customizações",5613.22],["Rendimentos",78.72],["Estornos",0.93]],
+    pag_cat:[["Folha TI",349145.48],["Multas",149331.51],["Pagamento Empréstimos",94274.25],["Despesas Diversas",92755],["Folha Comercial",84058.64],["Folha Implantação",81047.14],["Rescisões",77669.34],["Parcel. Impostos",76655.78],["Folha Sócios",66621.85],["Datacenter",55980.41]],
+    cli:[["CAIXA SUPORTE - SP",243937.72],["Grupo ZELO",83525.52],["BNDES",39056.93],["SESI - RN",23658.99],["EVEN CONSTRUTORA",21362.85],["RTM TELECOMUNICAÇÕES",18200],["Embraer (SaaS)",18079.11],["Randon",15276.64]],
+    fluxo:{"02/02":{rec:42454.32,pag:24317.91},"03/02":{rec:36301.21,pag:27853.27},"04/02":{rec:206847.8,pag:2305},"05/02":{rec:52936.49,pag:64080.32},"06/02":{rec:26448.02,pag:15744.74},"09/02":{rec:53920.28,pag:33247.72},"10/02":{rec:72504.56,pag:226800.09},"11/02":{rec:14979.29,pag:19475.16},"12/02":{rec:29499.63,pag:39607.53},"13/02":{rec:28540.41,pag:101615.5},"16/02":{rec:0,pag:1765},"18/02":{rec:266852.14,pag:92024.43},"19/02":{rec:41612.72,pag:9237.55},"20/02":{rec:65381.29,pag:21747.76},"23/02":{rec:51828.5,pag:1305.5},"24/02":{rec:57258.81,pag:4477.5},"25/02":{rec:46890.28,pag:2613.86},"26/02":{rec:24747.77,pag:80218.12},"27/02":{rec:80930.81,pag:697310.58},"28/02":{rec:0.93,pag:550}},
+    nota:"* Fevereiro concentrou R$149K em Multas — maior custo não-recorrente do período."
+  },
+  "2026-03":{
+    rec_cat:[["SaaS (Recorrente)",1409035.43],["Implantação",40960],["Consultoria",15000],["Customizações",3613.22],["Rendimentos",182.17]],
+    pag_cat:[["Folha TI",350822.31],["Pagamento Empréstimos",121960.96],["Folha Implantação",101307.14],["Datacenter",101130.88],["Folha Comercial",97593.74],["Parcel. Impostos",78047.53],["Folha Sócios",70798.03],["Soluções TI",53862.74],["Fornecedores/PJs",47485.44],["Salários CLT",43148.2]],
+    cli:[["CAIXA SUPORTE - SP",243937.72],["BNDES",41041.89],["ORIGEO PRODUTOS AGRO.",28000],["VIBRA ENERGIA",24259.76],["PETROS",23043.32],["PWC STRATEGY&",22634.04],["FERBASA",21788.74],["INEC",21623.61]],
+    fluxo:{"02/03":{rec:102539.12,pag:23104.87},"03/03":{rec:29318.12,pag:44237.27},"04/03":{rec:21185.29,pag:53248.2},"05/03":{rec:146816.1,pag:106943.65},"06/03":{rec:38212.74,pag:25573.05},"07/03":{rec:0,pag:5.94},"08/03":{rec:1036.5,pag:0},"09/03":{rec:55016.12,pag:49760.43},"10/03":{rec:51257.87,pag:42493.77},"11/03":{rec:46988.32,pag:12.14},"12/03":{rec:46940.27,pag:1490.25},"13/03":{rec:25817.29,pag:29662.37},"16/03":{rec:68497.31,pag:151170.7},"17/03":{rec:250595.95,pag:24558.02},"18/03":{rec:12715.05,pag:4681.82},"19/03":{rec:33539.73,pag:7517.82},"20/03":{rec:133445.72,pag:30178.97},"23/03":{rec:46169.89,pag:21663.48},"24/03":{rec:51880.97,pag:725.77},"25/03":{rec:106175.23,pag:36924.56},"26/03":{rec:58447.44,pag:10863.38},"27/03":{rec:17553.81,pag:649427.37},"28/03":{rec:0,pag:550},"30/03":{rec:108869.8,pag:112473.16},"31/03":{rec:15772.18,pag:32755.65}},
+    nota:"* Março quase equilibrado (net +R$8,7K). Dia 27/03 concentrou R$649K em saídas (folha + empréstimos)."
+  },
+  "2026-04":{
+    rec_cat:[["SaaS (Recorrente)",1316139.61],["Implantação",25415],["Consultoria",15000],["Customizações",4313.22],["Devoluções",4200],["Estornos",2060.25],["Rendimentos",122.58]],
+    pag_cat:[["Folha TI",380853.64],["Pagamento Empréstimos",133442.86],["Folha Comercial",87588.95],["Folha Implantação",76054.2],["Parcel. Impostos",74646.84],["Folha Sócios",70798.03],["Rescisões",62050.13],["Salários CLT",59773.01],["Datacenter",52753.56],["Comissões",48567.03]],
+    cli:[["CAIXA SUPORTE - SP",243937.72],["BANCO FIBRA SA",46187.93],["BNDES",44601.45],["SICOOB CREDICITRUS",38949.56],["ELO SERVICOS S.A.",23833.32],["EVEN CONSTRUTORA",21362.85],["BRAVO GRC",20923.76],["TecBan",20726.33]],
+    fluxo:{"01/04":{rec:33480.08,pag:34034.37},"02/04":{rec:22726.17,pag:8825.23},"04/04":{rec:7911.21,pag:0},"06/04":{rec:176228.01,pag:173032.48},"07/04":{rec:23974.16,pag:469.66},"08/04":{rec:27727.01,pag:628.89},"09/04":{rec:42677.3,pag:53056.06},"10/04":{rec:58191.52,pag:59739.19},"12/04":{rec:0,pag:790},"13/04":{rec:45060.6,pag:5403.89},"14/04":{rec:14759.61,pag:8944.26},"15/04":{rec:58348.47,pag:172670.31},"16/04":{rec:35140.43,pag:5.94},"17/04":{rec:285334.06,pag:5.5},"20/04":{rec:83060.17,pag:32605.21},"22/04":{rec:94239.32,pag:21137.29},"23/04":{rec:37298.26,pag:24602.39},"24/04":{rec:79819.88,pag:43230.38},"27/04":{rec:108934.53,pag:23600.92},"28/04":{rec:40236.63,pag:651989.62},"29/04":{rec:29604.27,pag:21437.02},"30/04":{rec:62498.97,pag:113685.37}},
+    nota:"* Abril negativo (–R$83K). Dia 28/04 concentrou R$652K em saídas — maior pico do mês."
+  },
+  "2026-05":{
+    rec_cat:[["SaaS (Recorrente)",1174120.11],["Implantação",33000],["Customizações",7654.88],["Estornos",19.10],["Rendimentos",1.49]],
+    pag_cat:[["Pagamento Empréstimos",83427.96],["Folha TI",71838.75],["Datacenter",54536.18],["Soluções TI",31185.94],["Compra Serv. TI",28560.54],["Comissões",27294.68],["ISS",26403.68],["Consultores/PJs",23758.75],["Software/Soluções",23140.97],["Reembolso Desp.",22729.74]],
+    cli:[["CAIXA SUPORTE - SP",243937.72],["NORTE ENERGIA",95726.61],["BNDES",44605.9],["UNIMED DE FRANCA",25000],["NEON PAGAMENTOS",20000],["SESI - MA",19974.69],["Embraer (SaaS)",18079.11],["QUEIROZ PARTICIPAÇÕES",17373.46]],
+    fluxo:{"01/05":{rec:4428.8,pag:0},"03/05":{rec:3500,pag:0},"04/05":{rec:102006.71,pag:53249.76},"05/05":{rec:90539.05,pag:106011.56},"06/05":{rec:140121.21,pag:25276.08},"07/05":{rec:37925.43,pag:8043.46},"08/05":{rec:12292.4,pag:3005.94},"10/05":{rec:7380.62,pag:0},"11/05":{rec:74232.92,pag:104914.01},"12/05":{rec:22253.4,pag:10147.15},"13/05":{rec:34926.07,pag:11332.48},"14/05":{rec:17716.42,pag:6763.99},"15/05":{rec:57780.9,pag:163089.22},"18/05":{rec:36037.44,pag:1393.27},"19/05":{rec:250405.21,pag:21175.03},"20/05":{rec:107050.31,pag:27155.05},"21/05":{rec:27631.43,pag:282.12},"22/05":{rec:188567.26,pag:213}},
+    nota:"* Parcial até 22/05. Dias 20–22/05 acrescentaram R$323K em entradas. Dia 15/05 concentrou R$163K em saídas."
+  }
+};
+
+const saldoEvolucao = [
+  ["Dez/25",82884.10],["Jan/26",684668.15],["Fev/26",611483.47],
+  ["Mar/26",474953.94],["Abr/26",346248.52],["22/Mai",744474.19]
+];
+
+// ===== HELPERS =====
+const fmtR = v=>'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtK = v=>v>=1000000?`R$${(v/1000000).toFixed(2)}M`:v>=1000?`R$${(v/1000).toFixed(0)}K`:`R$${v.toFixed(0)}`;
+const fmtKs= v=>v>=1000000?`${(v/1000000).toFixed(2)}M`:v>=1000?`${(v/1000).toFixed(0)}K`:`${v.toFixed(0)}`;
+
+// ===== ESTADO =====
+let filtroAtual = 'all';
+let charts = {};
+
+function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+
+// ===== MINI CAIXA CHART =====
+function buildMiniCaixa(){
+  const ctx=document.getElementById('miniCaixa').getContext('2d');
+  charts.mini = new Chart(ctx,{
+    type:'line',
+    data:{
+      labels:saldoEvolucao.map(d=>d[0]),
+      datasets:[{
+        data:saldoEvolucao.map(d=>d[1]),
+        borderColor:'#34d399',
+        backgroundColor:'rgba(52,211,153,.15)',
+        borderWidth:2,
+        pointBackgroundColor:'#34d399',
+        pointRadius:3,
+        tension:.4,
+        fill:true
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{
+        callbacks:{label:ctx=>fmtR(ctx.raw)},
+        backgroundColor:'rgba(15,23,42,.9)',titleColor:'#94a3b8',bodyColor:'#f8fafc',
+        titleFont:{size:10},bodyFont:{size:11,weight:'bold'}
+      }},
+      scales:{
+        x:{display:false},
+        y:{display:false}
+      }
+    }
+  });
+}
+
+// ===== KPIs =====
+function updateKPIs(mes){
+  let rec,pag,recSub,pagSub,netSub;
+  if(mes==='all'){
+    rec=Object.values(mensal).reduce((a,d)=>a+d.rec,0);
+    pag=Object.values(mensal).reduce((a,d)=>a+d.pag,0);
+    recSub='Total YTD · Jan–22/Mai · excl. transf.';
+    pagSub='Total YTD · Jan–22/Mai · excl. transf.';
+  } else {
+    const d=mensal[mes];
+    rec=d.rec; pag=d.pag;
+    recSub=`${d.label}${d.parcial?' (parcial até 22/05)':''}`;
+    pagSub=recSub;
+  }
+  const net=rec-pag;
+  document.getElementById('kpi-rec').textContent=fmtK(rec);
+  document.getElementById('kpi-pag').textContent=fmtK(pag);
+  document.getElementById('kpi-net').textContent=(net>=0?'+ ':'')+fmtK(Math.abs(net));
+  document.getElementById('kpi-rec-sub').textContent=recSub;
+  document.getElementById('kpi-pag-sub').textContent=pagSub;
+  document.getElementById('kpi-net-sub').textContent=net>=0?'Resultado positivo':'Resultado negativo';
+  document.getElementById('kpi-net').style.color=net>=0?'#4f46e5':'#dc2626';
+}
+
+// ===== GRÁFICO PRINCIPAL =====
+function buildMainChart(mes){
+  destroyChart('main');
+  const ctx=document.getElementById('chartMain').getContext('2d');
+  const title=document.getElementById('chart-main-title');
+  const nota=document.getElementById('chart-main-nota');
+
+  if(mes==='all'){
+    // Barras agrupadas por mês
+    title.textContent='📅 Entradas × Saídas por Mês';
+    nota.textContent='* Maio/2026 parcial (até 22/05). Transferências internas excluídas. Jan inclui captação de R$990K.';
+    const labels=Object.values(mensal).map(d=>d.label+(d.parcial?' *':''));
+    const recs=Object.values(mensal).map(d=>d.rec);
+    const pags=Object.values(mensal).map(d=>d.pag);
+    charts.main=new Chart(ctx,{
+      type:'bar',
+      data:{labels,datasets:[
+        {label:'Entradas',data:recs,backgroundColor:'rgba(16,185,129,.75)',borderRadius:5,borderSkipped:false},
+        {label:'Saídas',  data:pags,backgroundColor:'rgba(239,68,68,.75)', borderRadius:5,borderSkipped:false}
+      ]},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        interaction:{mode:'index',intersect:false},
+        plugins:{
+          legend:{position:'top',labels:{font:{size:12},padding:16,usePointStyle:true}},
+          tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${fmtR(ctx.raw)}`}}
+        },
+        scales:{
+          x:{grid:{display:false},ticks:{font:{size:12},color:'#374151'}},
+          y:{grid:{color:'#f3f4f6'},ticks:{font:{size:11},callback:v=>fmtK(v)}}
+        }
+      }
+    });
+  } else {
+    // Fluxo diário do mês selecionado
+    const d=detalhe[mes];
+    const labels=Object.keys(d.fluxo);
+    const recs=Object.values(d.fluxo).map(v=>v.rec);
+    const pags=Object.values(d.fluxo).map(v=>v.pag);
+    title.textContent=`📈 Fluxo Diário — ${mensal[mes].label}`;
+    nota.textContent=d.nota;
+    charts.main=new Chart(ctx,{
+      type:'bar',
+      data:{labels,datasets:[
+        {label:'Entradas',data:recs,backgroundColor:'rgba(16,185,129,.75)',borderRadius:4,borderSkipped:false},
+        {label:'Saídas',  data:pags,backgroundColor:'rgba(239,68,68,.75)', borderRadius:4,borderSkipped:false}
+      ]},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        interaction:{mode:'index',intersect:false},
+        plugins:{
+          legend:{position:'top',labels:{font:{size:12},padding:14,usePointStyle:true}},
+          tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${fmtR(ctx.raw)}`}}
+        },
+        scales:{
+          x:{grid:{display:false},ticks:{font:{size:10},color:'#374151',maxRotation:45}},
+          y:{grid:{color:'#f3f4f6'},ticks:{font:{size:11},callback:v=>fmtK(v)}}
+        }
+      }
+    });
+  }
+}
+
+// ===== RECEITAS POR CATEGORIA =====
+function buildRecCat(mes){
+  destroyChart('recCat');
+  const ctx=document.getElementById('chartRecCat').getContext('2d');
+  let data;
+  if(mes==='all'){
+    const agg={};
+    Object.values(detalhe).forEach(d=>d.rec_cat.forEach(([k,v])=>{agg[k]=(agg[k]||0)+v;}));
+    data=Object.entries(agg).sort((a,b)=>b[1]-a[1]).slice(0,7);
+  } else {
+    data=detalhe[mes].rec_cat.slice(0,7);
+  }
+  const colors=['#6366f1','#34d399','#818cf8','#a5b4fc','#6ee7b7','#c7d2fe','#d1fae5'];
+  charts.recCat=new Chart(ctx,{
+    type:'doughnut',
+    data:{
+      labels:data.map(d=>d[0]),
+      datasets:[{data:data.map(d=>d[1]),backgroundColor:colors,borderWidth:2,borderColor:'#fff'}]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,cutout:'62%',
+      plugins:{
+        legend:{position:'bottom',labels:{font:{size:10},padding:9,boxWidth:11}},
+        tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${fmtR(ctx.raw)}`}}
+      }
+    }
+  });
+}
+
+// ===== PAGAMENTOS POR CATEGORIA =====
+function buildPagCat(mes){
+  destroyChart('pagCat');
+  const ctx=document.getElementById('chartPagCat').getContext('2d');
+  let data;
+  if(mes==='all'){
+    const agg={};
+    Object.values(detalhe).forEach(d=>d.pag_cat.forEach(([k,v])=>{agg[k]=(agg[k]||0)+v;}));
+    data=Object.entries(agg).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  } else {
+    data=detalhe[mes].pag_cat.slice(0,10);
+  }
+  charts.pagCat=new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:data.map(d=>d[0]),
+      datasets:[{
+        label:'Pago',
+        data:data.map(d=>d[1]),
+        backgroundColor:data.map((_,i)=>`hsla(0,72%,${44+i*2}%,.75)`),
+        borderRadius:4,borderSkipped:false
+      }]
+    },
+    options:{
+      indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>` ${fmtR(ctx.raw)}`}}
+      },
+      scales:{
+        x:{grid:{color:'#f3f4f6'},ticks:{font:{size:10},callback:v=>fmtK(v)}},
+        y:{grid:{display:false},ticks:{font:{size:10}}}
+      }
+    }
+  });
+}
+
+// ===== TOP CLIENTES =====
+function buildTopClientes(mes){
+  let data;
+  if(mes==='all'){
+    const agg={};
+    Object.values(detalhe).forEach(d=>d.cli.forEach(([k,v])=>{agg[k]=(agg[k]||0)+v;}));
+    data=Object.entries(agg).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  } else {
+    data=detalhe[mes].cli.slice(0,8);
+  }
+  const max=data[0]?data[0][1]:1;
+  const ul=document.getElementById('topClientes');
+  ul.innerHTML='';
+  data.forEach(([nome,val],i)=>{
+    ul.innerHTML+=`<li>
+      <span class="top-rank">${i+1}</span>
+      <div class="top-wrap">
+        <div class="top-nome" title="${nome}">${nome}</div>
+        <div class="top-bar"><div class="top-fill" style="width:${(val/max*100).toFixed(1)}%"></div></div>
+      </div>
+      <span class="top-val">${fmtK(val)}</span>
+    </li>`;
+  });
+  const nota=document.getElementById('nota-clientes');
+  nota.textContent=mes==='all'||mes==='2026-01'?'* BANCO BRADESCO S.A. (R$990K) = captação de empréstimo, não receita operacional.':'';
+}
+
+// ===== CONSOLIDADO TABLE =====
+function buildConsolidado(mesAtivo){
+  const body=document.getElementById('consBody');
+  body.innerHTML='';
+  let totRec=0,totPag=0;
+  Object.entries(mensal).forEach(([mes,d])=>{
+    const net=d.rec-d.pag;
+    totRec+=d.rec; totPag+=d.pag;
+    const sel=mes===mesAtivo?'class="selected"':'';
+    body.innerHTML+=`<tr ${sel}>
+      <td>${d.label}${d.parcial?'<span class="par">PARCIAL</span>':''}</td>
+      <td class="pos">${fmtK(d.rec)}</td>
+      <td class="neg">${fmtK(d.pag)}</td>
+      <td class="${net>=0?'pos':'neg'}">${net>=0?'+ ':''} ${fmtK(Math.abs(net))}</td>
+    </tr>`;
+  });
+  const totNet=totRec-totPag;
+  body.innerHTML+=`<tr class="total-row">
+    <td>TOTAL YTD</td>
+    <td class="pos">${fmtK(totRec)}</td>
+    <td class="neg">${fmtK(totPag)}</td>
+    <td class="${totNet>=0?'pos':'neg'}">${totNet>=0?'+ ':''} ${fmtK(Math.abs(totNet))}</td>
+  </tr>`;
+}
+
+// ===== FILTRO =====
+function setFiltro(mes){
+  filtroAtual=mes;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active',c.dataset.mes===mes));
+  updateKPIs(mes);
+  buildMainChart(mes);
+  buildRecCat(mes);
+  buildPagCat(mes);
+  buildTopClientes(mes);
+  buildConsolidado(mes);
+}
+
+// ===== INIT =====
+buildMiniCaixa();
+setFiltro('all');
+</script>
+</body>
+</html>
